@@ -18,11 +18,6 @@ struct ClaimEntry {
 	int height;
 };
 
-struct position {
-	int x; 
-	int y;
-};
-
 struct Claimed {
 	bool visited;
 	bool counted;
