@@ -2,262 +2,308 @@
 
 ## Problem Summary
 
-You arrive at the North Pole's secret entrance, but the password has been changed. To get in, you need to solve a puzzle involving a safe with a circular dial.
+We need to open a secret entrance with a circular safe dial. The dial has 100 positions (0-99) and starts at position 50. We receive rotation instructions and must count how many times position 0 is reached.
 
-### The Safe Dial
+### Part 1: Count Times Landing on 0
 
-- The dial has **100 positions** numbered from **0 to 99**
-- The dial starts at position **50**
-- The dial is **circular**: going left from 0 wraps to 99, and going right from 99 wraps to 0
+Count how many times the dial **lands on position 0** after completing a rotation.
 
-### Instructions Format
+**Example**: Starting at 50
+```
+L68: 50 → 82 (doesn't land on 0)
+R48: 82 → 30 (doesn't land on 0)
+L30: 30 → 0  (lands on 0!)  count = 1
+```
 
-You receive a list of rotation instructions, one per line:
-- Format: `<Direction><Distance>`
-- **Direction**:
-  - `L` = Left (toward lower numbers)
-  - `R` = Right (toward higher numbers)
-- **Distance**: How many clicks to rotate
+### Part 2: Count Every Click Through 0 (Method 0x434C49434B)
 
-### Examples
+Count **every time the dial passes through or lands on position 0** during any rotation, including mid-rotation crossings.
 
-1. **From position 11:**
-   - `R8` → position 19 (11 + 8 = 19)
-   - Then `L19` → position 0 (19 - 19 = 0)
+**Example**: Starting at 50
+```
+L68: 50 → 82 (passes through 0 once)  count = 1
+R48: 82 → 30                           count = 1
+R48: 30 → 78                           count = 1
+R60: 78 → 38 (passes through 0 once)  count = 2
+```
 
-2. **Wrapping examples:**
-   - From 0: `L10` → position 95 (wraps around: 0 - 10 + 100 = 95)
-   - From 5: `L10` → position 95 (5 - 10 = -5, which wraps to 95)
-   - From 99: `R5` → position 4 (99 + 5 = 104, mod 100 = 4)
+### Key Difference
 
-### The Goal
+**Part 1**: Only counts when a rotation **ends** on 0
+**Part 2**: Counts **every click** through 0 during the entire rotation
 
-**Count how many times the dial lands on position 0 after any rotation.**
+---
 
-The password is this count!
+## Examples
+
+### Part 1 Sample
+
+Starting at position 50:
+```
+L68: 50 → 82
+L30: 82 → 52
+R48: 52 → 0    ← lands on 0 (count = 1)
+L5:  0 → 95
+R60: 95 → 55
+L55: 55 → 0    ← lands on 0 (count = 2)
+L1:  0 → 99
+L99: 99 → 0    ← lands on 0 (count = 3)
+R14: 0 → 14
+L82: 14 → 32
+```
+
+**Total**: 3 ✅
+
+### Part 2 Sample
+
+Starting at position 50:
+```
+L68: 50 → 82  (passes through 0 once)     count = 1
+L30: 82 → 52                               count = 1
+R48: 52 → 0   (lands on 0)                 count = 2
+L5:  0 → 95                                count = 2
+R60: 95 → 55  (passes through 0 once)     count = 3
+L55: 55 → 0   (lands on 0)                 count = 4
+L1:  0 → 99                                count = 4
+L99: 99 → 0   (passes through 0 once)     count = 5
+R14: 0 → 14                                count = 5
+L82: 14 → 32  (passes through 0 once)     count = 6
+```
+
+**Total**: 6 ✅
 
 ---
 
 ## Solution Approach
 
-### Algorithm
+### Part 1 Algorithm: Simple Check
 
-1. **Start at position 50**
-2. **For each rotation instruction:**
-   - Parse the direction (L or R) and distance
-   - Update the position:
-     - **Left**: `position = (position - distance) % 100`
-     - **Right**: `position = (position + distance) % 100`
-   - Handle negative wrapping (Swift's modulo can return negative values)
-   - **Check if position == 0**, if so, increment counter
-3. **Return the counter**
-
-### Key Implementation Details
-
-#### Circular Modulo Arithmetic
-
-The trickiest part is handling the circular nature of the dial:
+After each rotation, check if the final position is 0:
 
 ```swift
-// For LEFT rotations:
-currentPosition = (currentPosition - rotation.distance) % dialSize
+func rotate(_ rotation: Rotation) {
+    switch rotation.direction {
+    case .left:
+        currentPosition = (currentPosition - rotation.distance) % 100
+        if currentPosition < 0 {
+            currentPosition += 100
+        }
+    case .right:
+        currentPosition = (currentPosition + rotation.distance) % 100
+    }
 
-// Swift's modulo can return negative values, so we need to handle that:
-if currentPosition < 0 {
-    currentPosition += dialSize  // Wrap to positive range
-}
-
-// For RIGHT rotations (simpler):
-currentPosition = (currentPosition + rotation.distance) % dialSize
-```
-
-**Why the special handling for negatives?**
-
-In Swift (and many programming languages), `-5 % 100` returns `-5`, not `95`. We need to add 100 to get the correct positive position.
-
-#### Example Walkthrough
-
-Let's trace through the sample input:
-
-```
-Starting position: 50
-
-1. L68: 50 - 68 = -18 → -18 + 100 = 82
-2. L30: 82 - 30 = 52
-3. R48: 52 + 48 = 100 → 100 % 100 = 0  ✓ (count = 1)
-4. L5:  0 - 5 = -5 → -5 + 100 = 95
-5. R60: 95 + 60 = 155 → 155 % 100 = 55
-6. L55: 55 - 55 = 0  ✓ (count = 2)
-7. L1:  0 - 1 = -1 → -1 + 100 = 99
-8. L99: 99 - 99 = 0  ✓ (count = 3)
-9. R14: 0 + 14 = 14
-10. L82: 14 - 82 = -68 → -68 + 100 = 32
-
-Total times at 0: 3 ✓
-```
-
----
-
-## Swift Implementation
-
-The solution uses three main components:
-
-### 1. **Rotation Struct**
-Parses and stores rotation instructions (L/R and distance).
-
-```swift
-struct Rotation {
-    let direction: Direction  // .left or .right
-    let distance: Int
-
-    enum Direction {
-        case left
-        case right
+    if currentPosition == 0 {
+        timesLandedOnZero += 1
     }
 }
 ```
 
-### 2. **SafeDial Class**
-Manages the dial state and processes rotations.
+**Complexity**: O(1) per rotation
+
+### Part 2 Algorithm: Count Crossings
+
+Count how many times we pass through 0 mathematically:
 
 ```swift
-class SafeDial {
-    private(set) var currentPosition: Int
-    private(set) var timesLandedOnZero: Int = 0
-    private let dialSize = 100
+func countClicksThroughZero(from start: Int, distance: Int, direction: Direction) -> Int {
+    // Complete rotations always pass through 0
+    let completeRotations = distance / 100
+    var count = completeRotations
 
-    func rotate(_ rotation: Rotation) {
-        // Update position based on direction
-        // Check if we landed on 0
+    // Check if partial rotation crosses 0
+    let remaining = distance % 100
+
+    switch direction {
+    case .right:
+        // Right: crosses if start + remaining >= 100
+        if start + remaining >= 100 {
+            count += 1
+        }
+    case .left:
+        // Left: crosses if start <= remaining and start > 0
+        // (we go to 0 or negative and wrap)
+        if start > 0 && start <= remaining {
+            count += 1
+        }
     }
+
+    return count
 }
 ```
 
-### 3. **Input Processing**
-Parses the input string into Rotation objects.
+**How it works**:
+1. **Complete rotations**: distance ÷ 100 gives full circles (each passes through 0 once)
+2. **Partial rotation**: Check if remaining distance crosses 0
+   - Right: crosses if start + remaining ≥ 100
+   - Left: crosses if start ≤ remaining (goes through 0 or negative)
+   - Exception: Don't count if already starting at 0
+
+**Complexity**: O(1) per rotation
+
+### Example Calculations
+
+**Right rotation from 95, distance 60:**
+- Complete rotations: 60 ÷ 100 = 0
+- Remaining: 60 % 100 = 60
+- Check: 95 + 60 = 155 ≥ 100 ✓
+- Count: 0 + 1 = **1**
+
+**Left rotation from 50, distance 68:**
+- Complete rotations: 68 ÷ 100 = 0
+- Remaining: 68 % 100 = 68
+- Check: 50 > 0 AND 50 ≤ 68 ✓
+- Count: 0 + 1 = **1**
+
+**Edge case - R1000 from position 50:**
+- Complete rotations: 1000 ÷ 100 = 10
+- Remaining: 0
+- Returns to position 50
+- Count: **10**
 
 ---
 
 ## Results
 
-### Sample Input
-- **Expected**: 3
-- **Got**: 3 ✓
-- **Status**: PASSED
+### Part 1: Times Landing on 0
 
-### Actual Puzzle Input
-- **Answer**: **1029**
-- **Status**: SOLVED
+**Sample Input:**
+- Expected: 3
+- Got: 3 ✓
+- Status: PASSED
+
+**Actual Puzzle Input:**
+- Answer: **1029** ✅
+
+### Part 2: Every Click Through 0
+
+**Sample Input:**
+- Expected: 6
+- Got: 6 ✓
+- Status: PASSED
+
+**Actual Puzzle Input:**
+- Answer: **5892** ✅
+
+---
+
+## Code Structure
+
+```
+Day1-Puzzle1-Secret Entrance/
+├── Sources/
+│   ├── SafeDial.swift       # Core dial rotation logic
+│   │   ├── rotate()                  # Part 1: simple rotation
+│   │   ├── processRotations()        # Part 1: count landings
+│   │   ├── rotatePart2()             # Part 2: rotation with counting
+│   │   └── processRotationsPart2()   # Part 2: count all crossings
+│   ├── Rotation.swift       # Symlink to ../../Utilities/
+│   ├── InputReader.swift    # Symlink to ../../Utilities/
+│   └── main.swift           # Entry point (runs both parts)
+├── Inputs/
+│   └── input.txt            # Puzzle input
+├── Package.swift
+└── .gitignore
+```
 
 ---
 
 ## How to Run
 
-### Option 1: Run the standalone script
 ```bash
-swift solve.swift
+cd "2025/Day1-Puzzle1-Secret Entrance"
+swift run
 ```
 
-### Option 2: Open in Xcode
-1. Open `SecretEntrance.xcodeproj` in Xcode
-2. Build and run (⌘R)
-
-### Option 3: Use Swift Package Manager
+Or compile directly:
 ```bash
-swift build
-swift run
+swiftc Sources/*.swift -o solve
+./solve
 ```
 
 ---
 
-## Learning Points
+## Key Implementation Details
 
-### 1. Modulo Arithmetic with Negative Numbers
-This problem teaches an important lesson about modulo operations:
-- In mathematics: `-5 mod 100 = 95`
-- In Swift/most languages: `-5 % 100 = -5`
+### Circular Arithmetic
 
-**Solution**: When result is negative, add the modulus:
+The dial wraps around:
+- Position 0 - 1 = 99 (left from 0)
+- Position 99 + 1 = 0 (right from 99)
+
+Swift's modulo handles this with a caveat:
 ```swift
-if result < 0 {
-    result += modulus
+currentPosition = (currentPosition - distance) % 100
+if currentPosition < 0 {
+    currentPosition += 100  // Swift's modulo can be negative
 }
 ```
 
-### 2. Circular Data Structures
-The dial is a perfect example of a circular buffer or ring. This pattern appears often in:
-- Game development (circular levels)
-- Time calculations (hours wrap after 23)
-- Buffer management
-- Clock arithmetic
+### Part 2: Mathematical Crossing Detection
 
-### 3. State Tracking
-We need to track:
-- Current position (the state)
-- Count of zeros (the answer)
+Instead of simulating each click, we calculate crossings:
 
-This is a simple state machine pattern.
+1. **Count complete circles**: Each 100-click rotation crosses 0 once
+2. **Check partial rotation**: Does the remaining distance cross 0?
+3. **Handle edge cases**: Starting at 0 shouldn't count as crossing
 
-### 4. Parsing Structured Input
-Breaking down each line into:
-- Direction character (L/R)
-- Numeric distance
-
-This teaches input validation and parsing techniques.
+This is O(1) instead of O(distance), crucial for large distances like R10000.
 
 ---
 
 ## Complexity Analysis
 
-- **Time Complexity**: O(n) where n is the number of rotations
-  - We process each rotation exactly once
-  - Each rotation is O(1) (just arithmetic)
+**Part 1:**
+- Time: O(n) where n is number of rotations
+- Space: O(1)
+- Each rotation is O(1) regardless of distance
 
-- **Space Complexity**: O(n)
-  - We store all n rotations in memory
-  - Could be optimized to O(1) by processing line-by-line
+**Part 2:**
+- Time: O(n) where n is number of rotations
+- Space: O(1)
+- Each rotation is O(1) regardless of distance
 
----
-
-## Possible Extensions
-
-1. **Part 2 Predictions**: Advent of Code usually has a Part 2. It might ask:
-   - What if we need to find a specific sequence?
-   - Track all unique positions visited?
-   - Find cycles in the dial positions?
-
-2. **Optimizations**:
-   - Stream processing (don't load all rotations at once)
-   - Detect cycles (if rotations repeat)
-
-3. **Variations**:
-   - Different dial sizes (not just 0-99)
-   - Multiple target positions
-   - Reverse: given a sequence of positions, find the rotations
+Both parts handle large distances efficiently through mathematical calculation.
 
 ---
 
-## Project Structure
+## Learning Points
 
-```
-Day1-Puzzle1-Secret Entrance/
-├── Package.swift           # Swift Package Manager config
-├── Sources/
-│   └── main.swift         # Full solution with file I/O
-├── Inputs/
-│   ├── sample.txt         # Example input
-│   └── input.txt          # Actual puzzle input
-├── solve.swift            # Standalone executable script
-└── README.md             # This file
-```
+1. **Modular Arithmetic**: Circular data structures use modulo operations
+2. **Mathematical Optimization**: Avoid simulating when you can calculate
+3. **Edge Cases**: Starting position matters (don't double-count)
+4. **Code Organization**: Shared utilities via symlinks prevent duplication
+5. **Problem Evolution**: Part 2 extends Part 1 with more granular counting
 
 ---
 
-## Author Notes
+## Comparison: Part 1 vs Part 2
 
-This solution was created for Advent of Code 2025, Day 1. The code emphasizes:
-- **Clarity**: Well-commented and structured
-- **Education**: Explains the "why" not just the "how"
-- **Swift idioms**: Proper use of optionals, structs, and classes
+| Aspect | Part 1 | Part 2 |
+|--------|--------|--------|
+| What to count | Rotations ending on 0 | Every click through 0 |
+| Sample answer | 3 | 6 |
+| Actual answer | 1029 | 5892 |
+| Algorithm | Check final position | Count crossings mathematically |
+| Complexity | O(1) per rotation | O(1) per rotation |
 
-Happy coding! 🎄
+Part 2 counts more because it includes mid-rotation crossings that Part 1 ignores.
+
+---
+
+## Why Part 2 Algorithm Works
+
+**Insight**: We don't need to simulate each click. We can determine mathematically:
+
+1. **Complete rotations**: Always cross 0 exactly once per 100 clicks
+2. **Partial rotations**: Cross 0 if the path from start to end includes position 0
+
+**Correctness**:
+- Right: Start + remaining ≥ 100 means we cross from 99 to 0
+- Left: Start ≤ remaining means we go negative and wrap through 0
+- Special case: If start = 0, we don't count (already at 0)
+
+This approach is critical for performance when distances can be thousands of clicks.
+
+---
+
+Day 1 complete! 🎄

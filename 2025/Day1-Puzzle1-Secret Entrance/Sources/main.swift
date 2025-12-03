@@ -4,22 +4,15 @@ import Foundation
 //
 // Problem Overview:
 // ===============
-// We have a circular safe dial with numbers 0-99. The dial starts at position 50.
-// We receive a sequence of rotation instructions (e.g., "L68" or "R48"):
-//   - L means rotate LEFT (toward lower numbers)
-//   - R means rotate RIGHT (toward higher numbers)
-//   - The number indicates how many clicks to rotate
+// Part 1: Count times the dial LANDS on 0 (rotation ends on 0)
+// Part 2: Count every time the dial PASSES THROUGH or lands on 0 (method 0x434C49434B)
 //
-// The dial is circular, so:
-//   - Rotating left from 0 goes to 99
-//   - Rotating right from 99 goes to 0
-//
-// Our goal: Count how many times the dial lands on 0 after any rotation.
+// The dial is circular with positions 0-99, starting at position 50.
+// Rotation instructions: L (left/lower) or R (right/higher) with number of clicks
 
 print("=== Advent of Code 2025 - Day 1: Secret Entrance ===\n")
 
-// Test with sample input
-print("Testing with sample input...")
+// Sample input
 let sampleInput = """
 L68
 L30
@@ -34,22 +27,50 @@ L82
 """
 
 let sampleRotations = InputReader.parseRotations(from: sampleInput)
-let sampleDial = SafeDial(startingPosition: 50)
-let sampleResult = sampleDial.processRotations(sampleRotations)
-print("Sample result: \(sampleResult)")
+let actualRotations = InputReader.readRotations(from: "input.txt")
+
+// MARK: - Part 1: Count times landing on 0
+
+print("--- Part 1: Count Times Landing on 0 ---\n")
+
+// Test with sample
+print("Testing with sample input...")
+let sampleDialPart1 = SafeDial(startingPosition: 50)
+let sampleResultPart1 = sampleDialPart1.processRotations(sampleRotations)
+print("Sample result: \(sampleResultPart1)")
 print("Expected: 3")
-print(sampleResult == 3 ? "✓ Sample test PASSED\n" : "✗ Sample test FAILED\n")
+print(sampleResultPart1 == 3 ? "✓ Sample test PASSED\n" : "✗ Sample test FAILED\n")
 
-// Solve the actual puzzle
-print("Solving the actual puzzle...")
-let rotations = InputReader.readRotations(from: "input.txt")
-
-if rotations.isEmpty {
-    print("No rotations found. Make sure input.txt exists in the Inputs folder.")
+// Solve Part 1
+print("Solving Part 1...")
+if !actualRotations.isEmpty {
+    let dialPart1 = SafeDial(startingPosition: 50)
+    let resultPart1 = dialPart1.processRotations(actualRotations)
+    print("Part 1 Answer: \(resultPart1)")
+    print()
 } else {
-    let dial = SafeDial(startingPosition: 50)
-    let result = dial.processRotations(rotations)
+    print("No rotations found in input.txt\n")
+}
 
-    print("\nFinal Answer: \(result)")
-    print("\nThe password to open the door is: \(result)")
+// MARK: - Part 2: Count every click through 0
+
+print("--- Part 2: Count Every Click Through 0 (Method 0x434C49434B) ---\n")
+
+// Test with sample
+print("Testing with sample input...")
+let sampleDialPart2 = SafeDial(startingPosition: 50)
+let sampleResultPart2 = sampleDialPart2.processRotationsPart2(sampleRotations)
+print("Sample result: \(sampleResultPart2)")
+print("Expected: 6")
+print(sampleResultPart2 == 6 ? "✓ Sample test PASSED\n" : "✗ Sample test FAILED\n")
+
+// Solve Part 2
+print("Solving Part 2...")
+if !actualRotations.isEmpty {
+    let dialPart2 = SafeDial(startingPosition: 50)
+    let resultPart2 = dialPart2.processRotationsPart2(actualRotations)
+    print("Part 2 Answer: \(resultPart2)")
+    print("\nThe password using method 0x434C49434B is: \(resultPart2)")
+} else {
+    print("No rotations found in input.txt")
 }
