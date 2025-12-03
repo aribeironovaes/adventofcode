@@ -1,10 +1,10 @@
-# Advent of Code 2025 - Day 2 Part 1: Gift Shop
+# Advent of Code 2025 - Day 2: Gift Shop
 
 ## Problem Summary
 
 A young Elf accidentally added invalid product IDs to the gift shop database. We need to identify and sum up all the invalid IDs in given ranges.
 
-### What Makes an ID Invalid?
+### Part 1: Exactly Twice Repetition
 
 An invalid ID is one where **some sequence of digits is repeated exactly twice**.
 
@@ -15,17 +15,28 @@ An invalid ID is one where **some sequence of digits is repeated exactly twice**
 - `101` → Odd length, can't be split evenly → Valid
 - `1234` → Split into "12" and "34" (not equal) → Valid
 
+### Part 2: At Least Twice Repetition
+
+An invalid ID is one where **some sequence of digits is repeated at least twice** (2 or more times).
+
+**Examples:**
+- `55` → "5" repeated twice → Invalid ✓
+- `123123123` → "123" repeated three times → Invalid ✓
+- `1111111` → "1" repeated seven times → Invalid ✓
+- `12341234` → "1234" repeated twice → Invalid ✓
+- `1212121212` → "12" repeated five times → Invalid ✓
+
 ### Key Rules
 
-1. IDs must have **even length** to potentially be invalid
-2. Split the ID string in half and compare both halves
+1. **Part 1**: Must be even length and split exactly in half with matching parts
+2. **Part 2**: Try all possible pattern lengths; if any pattern repeats 2+ times, it's invalid
 3. No leading zeroes (but since we work with numbers, this is automatic)
 
 ---
 
 ## Solution Approach
 
-### Algorithm
+### Part 1 Algorithm
 
 ```swift
 func isInvalidID(_ id: Int) -> Bool {
@@ -44,52 +55,95 @@ func isInvalidID(_ id: Int) -> Bool {
 }
 ```
 
+### Part 2 Algorithm
+
+```swift
+func isInvalidIDPart2(_ id: Int) -> Bool {
+    let str = String(id)
+    let len = str.count
+
+    // Try all possible pattern lengths from 1 to len/2
+    for patternLength in 1...(len / 2) {
+        guard len % patternLength == 0 else { continue }
+
+        let pattern = str.prefix(patternLength)
+
+        // Check if entire string is this pattern repeated
+        var isRepeated = true
+        var index = patternLength
+
+        while index < len {
+            let start = str.index(str.startIndex, offsetBy: index)
+            let end = str.index(start, offsetBy: patternLength)
+            let chunk = str[start..<end]
+
+            if chunk != pattern {
+                isRepeated = false
+                break
+            }
+
+            index += patternLength
+        }
+
+        if isRepeated {
+            return true
+        }
+    }
+
+    return false
+}
+```
+
 ### Example Walkthrough
 
-For the range `11-22`:
+**Part 1 - Range `95-115`:**
 ```
-11 → "11" → "1" == "1" → Invalid (sum: 11)
-12 → "12" → "1" != "2" → Valid
-13 → "13" → "1" != "3" → Valid
-...
-22 → "22" → "2" == "2" → Invalid (sum: 11 + 22 = 33)
-```
-
-For the range `95-115`:
-```
-95-98 → Not repeated patterns
 99 → "99" → "9" == "9" → Invalid (sum: 99)
-100-115 → Odd length or not repeated
+111 → "111" → Odd length → Valid
 ```
 
-For the range `998-1012`:
+**Part 2 - Range `95-115`:**
 ```
-1010 → "1010" → "10" == "10" → Invalid (sum: 1010)
+99 → "99" → "9" repeated twice → Invalid (sum: 99)
+111 → "111" → "1" repeated three times → Invalid (sum: 99 + 111 = 210)
+```
+
+**Part 2 - Range `565653-565659`:**
+```
+565656 → "565656" → "56" repeated three times → Invalid (sum: 565656)
 ```
 
 ---
 
 ## Results
 
-### Sample Input
+### Part 1: Exactly Twice Repetition
+
+**Sample Input:**
 - **Expected**: 1227775554
 - **Got**: 1227775554 ✓
 - **Status**: PASSED
 
-Breaking down the sample:
-- `11-22`: Invalid IDs: 11, 22 (sum: 33)
-- `95-115`: Invalid IDs: 99 (sum: 99)
-- `998-1012`: Invalid IDs: 1010 (sum: 1010)
-- `1188511880-1188511890`: Invalid IDs: 1188511885 (sum: 1188511885)
-- `222220-222224`: Invalid IDs: 222222 (sum: 222222)
-- `1698522-1698528`: No invalid IDs
-- `446443-446449`: Invalid IDs: 446446 (sum: 446446)
-- `38593856-38593862`: Invalid IDs: 38593859 (sum: 38593859)
-- Remaining ranges: Various invalid IDs
-- **Total**: 1227775554
-
-### Actual Puzzle Input
+**Actual Puzzle Input:**
 - **Answer**: **13919717792** ✅
+
+### Part 2: At Least Twice Repetition
+
+**Sample Input:**
+- **Expected**: 4174379265
+- **Got**: 4174379265 ✓
+- **Status**: PASSED
+
+Breaking down the sample (differences from Part 1):
+- `11-22`: Still 11, 22 (both "exactly twice")
+- `95-115`: Now includes 99 AND 111 (111 = "1" three times)
+- `998-1012`: Now includes 999 AND 1010 (999 = "9" three times)
+- `565653-565659`: Now includes 565656 ("56" three times)
+- `824824821-824824827`: Now includes 824824824 ("824" three times)
+- `2121212118-2121212124`: Now includes 2121212121 ("21" five times)
+
+**Actual Puzzle Input:**
+- **Answer**: **14582313461** ✅
 
 ---
 
@@ -98,9 +152,11 @@ Breaking down the sample:
 ```
 Day2-Puzzle1-Gift Shop/
 ├── Sources/
-│   ├── GiftShop.swift       # Core logic for detecting invalid IDs
+│   ├── GiftShop.swift       # Core logic for both parts
+│   │   ├── isInvalidID()           # Part 1: exactly twice
+│   │   └── isInvalidIDPart2()      # Part 2: at least twice
 │   ├── InputReader.swift    # Simple file reader utility
-│   └── main.swift           # Entry point
+│   └── main.swift           # Entry point (runs both parts)
 ├── Inputs/
 │   ├── sample.txt           # Sample test data
 │   └── input.txt            # Actual puzzle input
@@ -127,22 +183,33 @@ swiftc Sources/*.swift -o solve
 
 ## Key Implementation Details
 
-### Pattern Detection
+### Part 1: Simple Split
 
-The core algorithm is simple but effective:
+The algorithm simply checks if the number can be split in half with identical parts. This is O(log n) per number where n is the ID value.
 
-1. **Convert to string**: `String(id)` automatically handles no leading zeros
-2. **Check even length**: Only even-length numbers can be repeated patterns
-3. **Split and compare**: Use `prefix()` and `suffix()` to get each half
-4. **String comparison**: Swift's `==` operator works perfectly for string halves
+### Part 2: Pattern Detection
+
+The algorithm tries all possible pattern lengths:
+
+1. **Divisibility Check**: Only try pattern lengths that divide evenly into the total length
+2. **Pattern Extraction**: Get the first chunk as the candidate pattern
+3. **Validation**: Check if all subsequent chunks match the pattern
+4. **Early Exit**: Return true as soon as any valid pattern is found
+
+**Complexity for each ID:**
+- Try at most `len/2` pattern lengths
+- For each pattern, check at most `len` characters
+- Overall: O(len²) per ID, but practically very fast due to early exits
 
 ### Range Processing
 
+Both parts iterate through all IDs in each range. While some ranges are large (100,000+ numbers), the checks are efficient:
+
 ```swift
-static func sumInvalidIDs(in range: ClosedRange<Int>) -> Int {
+static func sumInvalidIDsPart2(in range: ClosedRange<Int>) -> Int {
     var sum = 0
     for id in range {
-        if isInvalidID(id) {
+        if isInvalidIDPart2(id) {
             sum += id
         }
     }
@@ -150,39 +217,46 @@ static func sumInvalidIDs(in range: ClosedRange<Int>) -> Int {
 }
 ```
 
-The solution iterates through all IDs in each range. While some ranges are large (100,000+ numbers), the check is O(log n) per number (for string conversion), making it efficient enough.
-
-### Input Parsing
-
-```swift
-static func parseRanges(from input: String) -> [ClosedRange<Int>] {
-    return input
-        .trimmingCharacters(in: .whitespacesAndNewlines)
-        .split(separator: ",")
-        .compactMap { parseRange(String($0)) }
-}
-```
-
-Handles comma-separated ranges and converts them to Swift's `ClosedRange<Int>` type.
-
 ---
 
 ## Complexity Analysis
 
-- **Time**: O(n × log m) where n is total IDs across all ranges, m is average ID size
+### Part 1
+- **Time**: O(n × log m) where n is total IDs, m is average ID size
 - **Space**: O(1) - only stores running sum
-- **Actual runtime**: < 1 second for the puzzle input
+
+### Part 2
+- **Time**: O(n × log²m) where n is total IDs, m is average ID size
+- **Space**: O(1) - only stores running sum
+
+**Actual runtime**: ~1-2 seconds for the puzzle input
+
+---
+
+## Comparison: Part 1 vs Part 2
+
+| Range | Part 1 Invalid IDs | Part 2 Invalid IDs | Difference |
+|-------|-------------------|-------------------|------------|
+| 11-22 | 11, 22 | 11, 22 | Same |
+| 95-115 | 99 | 99, 111 | +111 |
+| 998-1012 | 1010 | 999, 1010 | +999 |
+| 565653-565659 | None | 565656 | +565656 |
+| 824824821-824824827 | None | 824824824 | +824824824 |
+| 2121212118-2121212124 | None | 2121212121 | +2121212121 |
+
+Part 2 finds more invalid IDs because it catches patterns repeated 3+ times, not just exactly twice.
 
 ---
 
 ## Learning Points
 
-1. **Pattern Recognition**: Detecting repeated sequences by string splitting
-2. **Modular Arithmetic**: Understanding digit patterns in numbers
-3. **Swift Ranges**: Using `ClosedRange<Int>` for inclusive ranges
-4. **String Operations**: Efficient use of `prefix()` and `suffix()`
-5. **File I/O**: Path resolution for reading input files
+1. **Pattern Recognition**: Detecting repeated sequences by trying all divisor lengths
+2. **String Manipulation**: Using `prefix()`, `suffix()`, and string indexing in Swift
+3. **Algorithm Optimization**: Early exits when pattern is found
+4. **Modular Code**: Separate functions for Part 1 and Part 2 logic
+5. **Testing**: Validating with known sample outputs before solving
 
 ---
 
-Ready for Part 2! 🎄
+Day 2 complete! 🎄
+
