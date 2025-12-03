@@ -63,8 +63,9 @@ class SafeDial {
             }
         case .left:
             // Rotating left: check if we cross from 0 to 99
-            // This happens if start < remaining (we go negative and wrap)
-            if start < remaining {
+            // This happens if start <= remaining (we go to 0 or negative and wrap)
+            // But only if we're not already starting at 0
+            if start > 0 && start <= remaining {
                 count += 1
             }
         }

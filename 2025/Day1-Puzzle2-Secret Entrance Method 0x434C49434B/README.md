@@ -93,7 +93,7 @@ func countClicksThroughZero(from start: Int, distance: Int, direction: Direction
 - **Status**: PASSED
 
 ### Actual Puzzle Input
-- **Answer**: **5895** ✅
+- **Answer**: **5892** ✅
 
 ---
 
