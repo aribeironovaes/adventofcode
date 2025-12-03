@@ -1,0 +1,17 @@
+# Build artifacts
+.build/
+*.xcodeproj/
+DerivedData/
+*.swiftpm/
+
+# Binaries
+SecretEntranceMethod0x434C49434B
+*.o
+*.a
+
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcworkspace
