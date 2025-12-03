@@ -4,7 +4,7 @@
 
 The elevators are offline due to an electrical surge. To power the escalator, we need to configure emergency batteries. Each battery bank has batteries labeled with joltage ratings (1-9), and we need to find the maximum joltage each bank can produce.
 
-### The Challenge
+### Part 1: Select 2 Batteries
 
 - **Battery Banks**: Each line of input represents a bank of batteries
 - **Selection Rule**: Turn on exactly TWO batteries per bank
@@ -12,32 +12,53 @@ The elevators are offline due to an electrical surge. To power the escalator, we
 - **Cannot Rearrange**: Batteries must stay in their original positions
 - **Goal**: Find the maximum joltage from each bank and sum them all
 
-### Examples
+### Part 2: Select 12 Batteries
+
+After hitting the "joltage limit safety override" button, we now need more power:
+
+- **Selection Rule**: Turn on exactly TWELVE batteries per bank
+- **Joltage Calculation**: The joltage is the 12-digit number formed by concatenating the selected batteries' digits in order
+- **Challenge**: We need to skip some batteries while maximizing the resulting number
+- **Goal**: Find the maximum 12-digit joltage from each bank and sum them all
+
+---
+
+## Examples
+
+### Part 1 Examples
 
 **Bank: `987654321111111`**
 - Turn on positions 0 and 1 (digits 9 and 8) → **98 jolts**
-- This is the maximum because 9 and 8 are the two highest digits we can form in order
 
 **Bank: `811111111111119`**
 - Turn on positions 0 and 14 (digits 8 and 9) → **89 jolts**
-- Can't get 98 because 9 comes after 8 in the sequence
 
-**Bank: `234234234234278`**
-- Turn on positions 13 and 14 (digits 7 and 8) → **78 jolts**
+**Total Part 1**: 98 + 89 + 78 + 92 = **357**
 
-**Bank: `818181911112111`**
-- Turn on positions 6 and 11 (digits 9 and 2) → **92 jolts**
-- Position 6 has the digit 9, position 11 has the digit 2
+### Part 2 Examples
 
-**Total**: 98 + 89 + 78 + 92 = **357**
+**Bank: `987654321111111`** (15 digits, select 12, skip 3)
+- Turn on everything except three 1s at the end → **987654321111**
+- Skipped positions: 12, 13, 14
+
+**Bank: `811111111111119`** (15 digits, select 12, skip 3)
+- Turn on everything except three 1s in the middle → **811111111119**
+- Skipped some 1s to keep the 8 at start and 9 at end
+
+**Bank: `234234234234278`** (15 digits, select 12, skip 3)
+- Skip a 2, a 3, and another 2 near the start → **434234234278**
+- This maximizes the leading digits
+
+**Bank: `818181911112111`** (15 digits, select 12, skip 3)
+- Skip some 1s near the front to keep larger digits → **888911112111**
+
+**Total Part 2**: 987654321111 + 811111111119 + 434234234278 + 888911112111 = **3121910778619**
 
 ---
 
 ## Solution Approach
 
-### Algorithm
-
-The key insight is that we need to try all possible pairs of battery positions and find which pair produces the maximum 2-digit number.
+### Part 1 Algorithm: Try All Pairs
 
 ```swift
 func maximumJoltage(from bank: String) -> Int {
@@ -47,7 +68,6 @@ func maximumJoltage(from bank: String) -> Int {
     // Try all pairs (i, j) where i < j
     for i in 0..<(batteries.count - 1) {
         for j in (i + 1)..<batteries.count {
-            // Form 2-digit number from positions i and j
             let joltage = Int(String(batteries[i]) + String(batteries[j]))!
             maxJoltage = max(maxJoltage, joltage)
         }
@@ -57,52 +77,89 @@ func maximumJoltage(from bank: String) -> Int {
 }
 ```
 
-### How It Works
+**Complexity**: O(n²) per bank
 
-1. **Convert to Array**: Split the bank string into individual digit characters
-2. **Try All Pairs**: For each position `i`, try pairing it with every position `j` after it
-3. **Form Number**: Concatenate the digits at positions `i` and `j` to form a 2-digit number
-4. **Track Maximum**: Keep the highest joltage found
-5. **Sum Results**: Add up the maximum from each bank
+### Part 2 Algorithm: Greedy Selection
 
-### Example Walkthrough
+The key insight is to use a **greedy algorithm** that selects digits to maximize the result while maintaining order.
 
-For bank `818181911112111`:
+```swift
+func maximumJoltageWith12(from bank: String) -> Int {
+    let digits = Array(bank)
+    let n = digits.count
+    let k = 12
+
+    var result = ""
+    var sourcePos = 0
+
+    // For each position in the 12-digit result
+    for resultPos in 0..<k {
+        let remaining = k - resultPos
+        let latestStart = n - remaining
+
+        // Find the maximum digit in valid range
+        var maxDigit = Character("0")
+        var maxPos = sourcePos
+
+        for pos in sourcePos...latestStart {
+            if digits[pos] > maxDigit {
+                maxDigit = digits[pos]
+                maxPos = pos
+            }
+        }
+
+        result.append(maxDigit)
+        sourcePos = maxPos + 1
+    }
+
+    return Int(result)!
+}
+```
+
+**How it works**:
+1. **For each position** in the 12-digit result
+2. **Calculate how many digits remain** to fill
+3. **Find the latest starting position** that still leaves enough digits
+4. **Select the maximum digit** in that range
+5. **Move past the selected digit** and repeat
+
+**Example walkthrough** for `818181911112111`:
 
 ```
-Position: 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14
-Digit:    8  1  8  1  8  1  9  1  1  1  1  2  1  1  1
-
-Some pairs:
-(0, 1) → "81" → 81
-(0, 6) → "89" → 89
-(6, 7) → "91" → 91
-(6, 11) → "92" → 92  ← Maximum!
-(6, 12) → "91" → 91
+Position 0: Look at [0:3], max is 8 at position 0, take it → "8"
+Position 1: Look at [1:4], max is 8 at position 2, take it → "88"
+Position 2: Look at [3:5], max is 8 at position 4, take it → "888"
+Position 3: Look at [5:6], max is 9 at position 6, take it → "8889"
+Position 4-11: Take remaining 8 digits → "888911112111"
 ```
 
-The maximum is **92** from positions 6 and 11.
+**Complexity**: O(n × k) = O(n × 12) = O(n) per bank
 
 ---
 
 ## Results
 
-### Sample Input
+### Part 1: Select 2 Batteries
 
-**Banks:**
-1. `987654321111111` → 98
-2. `811111111111119` → 89
-3. `234234234234278` → 78
-4. `818181911112111` → 92
+**Sample Input:**
+- Expected: 357
+- Got: 357 ✓
+- Status: PASSED
 
-**Expected**: 357
-**Got**: 357 ✓
-**Status**: PASSED
+**Actual Puzzle Input:**
+- Battery Banks: 200
+- Answer: **17301** ✅
 
-### Actual Puzzle Input
+### Part 2: Select 12 Batteries
 
-- **Battery Banks**: 200
-- **Answer**: **17301** ✅
+**Sample Input:**
+- Expected: 3121910778619
+- Got: 3121910778619 ✓
+- Status: PASSED
+
+**Actual Puzzle Input:**
+- Battery Banks: 200
+- Answer: **172162399742349** ✅
 
 ---
 
@@ -112,8 +169,10 @@ The maximum is **92** from positions 6 and 11.
 Day3-Puzzle1-Lobby/
 ├── Sources/
 │   ├── BatteryBank.swift    # Core joltage calculation logic
+│   │   ├── maximumJoltage()        # Part 1: select 2
+│   │   └── maximumJoltageWith12()  # Part 2: select 12
 │   ├── InputReader.swift    # File reading utility
-│   └── main.swift           # Entry point
+│   └── main.swift           # Entry point (runs both parts)
 ├── Inputs/
 │   ├── sample.txt           # Sample test data
 │   └── input.txt            # Actual puzzle input
@@ -140,77 +199,65 @@ swiftc Sources/*.swift -o solve
 
 ## Key Implementation Details
 
-### Pair Generation
+### Part 1: Brute Force
 
-The nested loop structure ensures we try all unique pairs:
+Try all possible pairs and keep the maximum. Simple and effective for small k (k=2).
 
-```swift
-for i in 0..<(count - 1) {
-    for j in (i + 1)..<count {
-        // Process pair (i, j)
-    }
-}
-```
+### Part 2: Greedy Algorithm
 
-This generates all combinations where `i < j`, ensuring:
-- We don't try the same pair twice
-- We maintain the order (battery at position i comes before j)
-- We check all possible pairs exactly once
+The greedy approach works because:
+1. We want to maximize the leftmost digits first (they have higher place value)
+2. At each position, we can look ahead and pick the best available digit
+3. We must ensure we leave enough digits for the remaining positions
 
-### String to Integer Conversion
-
-```swift
-let digit1 = String(batteries[i])
-let digit2 = String(batteries[j])
-let joltageStr = digit1 + digit2
-let joltage = Int(joltageStr)!
-```
-
-By concatenating strings first, we naturally form the 2-digit number in the correct order.
+**Why greedy works**:
+- If we have a choice between placing a 9 or an 8 at position 0, we always choose 9
+- Any future digit selection cannot compensate for a suboptimal early digit
+- The constraint ensures we always have enough digits remaining
 
 ### Complexity Analysis
 
-**Per Bank:**
-- **Time**: O(n²) where n is the length of the bank
-- **Space**: O(1) - only store max value
+**Part 1:**
+- Time: O(n²) per bank where n is bank length
+- Space: O(1)
+- For n ≈ 100, this is ~10,000 operations per bank
+
+**Part 2:**
+- Time: O(n × k) = O(n × 12) per bank
+- Space: O(k) = O(12) for result string
+- For n ≈ 100, this is ~1,200 operations per bank
 
 **Overall:**
-- **Banks**: 200
-- **Average Length**: ~80-100 characters per bank
-- **Time**: O(banks × n²) ≈ O(200 × 10,000) = O(2,000,000) operations
-- **Space**: O(1) per bank
-- **Runtime**: < 1 second
-
-The quadratic time per bank is acceptable because:
-1. Each bank is relatively short (~100 characters max)
-2. We only have 200 banks
-3. The inner operations are simple comparisons
+- 200 banks × 100 digits each
+- Part 1: ~2,000,000 operations
+- Part 2: ~240,000 operations
+- Runtime: < 1 second for both parts
 
 ---
 
 ## Learning Points
 
-1. **Combinatorics**: Generating all pairs from a sequence
-2. **String Manipulation**: Concatenating digits to form numbers
-3. **Greedy Approach**: For each bank independently find the maximum
-4. **Problem Constraints**: Understanding "in order" means maintaining position order
-5. **Optimization**: Sometimes O(n²) is acceptable when n is small
+1. **Greedy Algorithms**: Part 2 demonstrates classic greedy subsequence selection
+2. **Place Value**: Higher positions have exponentially more impact on the final number
+3. **Constraint Management**: Ensuring we leave enough elements for future selections
+4. **Algorithm Optimization**: Part 2 is actually faster than Part 1 despite producing larger numbers
+5. **Problem Transformation**: From "select k items" to "find lexicographically largest subsequence"
 
 ---
 
-## Why This Works
+## Why Part 2 Greedy Works
 
-The key insight is that we're looking for the maximum value of the form `XY` where:
-- `X` is the digit at some position `i`
-- `Y` is the digit at some position `j > i`
-- We want to maximize `10*X + Y`
+The problem is equivalent to finding the **lexicographically largest subsequence** of length 12.
 
-To maximize this:
-1. We prefer larger values of `X` (tens digit)
-2. For the same `X`, we prefer larger values of `Y` (ones digit)
-3. We must maintain the constraint that `i < j` (order matters)
+**Proof sketch**:
+- Suppose we make a suboptimal choice at position i (choose digit d instead of d')
+- Where d < d' and both maintain valid remaining elements
+- No future choices can compensate because:
+  - Position i has place value 10^(11-i)
+  - All future positions have place value < 10^(11-i)
+  - The difference (d' - d) × 10^(11-i) > sum of all future possible improvements
 
-By trying all valid pairs, we guarantee finding the maximum.
+Therefore, greedy locally optimal = globally optimal.
 
 ---
 
