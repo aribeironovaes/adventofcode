@@ -14,11 +14,11 @@ class PrintingDepartment {
         self.cols = grid.first?.count ?? 0
     }
 
-    /// Check if a roll at (row, col) is accessible
-    /// A roll is accessible if it has fewer than 4 adjacent rolls
+    /// Check if a position at (row, col) is accessible
+    /// A position is accessible if it's empty and has fewer than 4 adjacent rolls
     func isAccessible(row: Int, col: Int) -> Bool {
-        // Must be a roll
-        guard grid[row][col] == "@" else { return false }
+        // Must be empty space
+        guard grid[row][col] == "." else { return false }
 
         // Count adjacent rolls in all 8 directions
         let adjacentCount = countAdjacentRolls(row: row, col: col)
@@ -59,7 +59,8 @@ class PrintingDepartment {
         return count
     }
 
-    /// Count total accessible rolls in the grid
+    /// Count total accessible positions in the grid
+    /// An accessible position is an empty space with fewer than 4 adjacent rolls
     func countAccessibleRolls() -> Int {
         var count = 0
 
@@ -74,13 +75,13 @@ class PrintingDepartment {
         return count
     }
 
-    /// Get a visual representation showing accessible rolls
+    /// Get a visual representation showing accessible positions
     func visualizeAccessibleRolls() -> String {
         var result = ""
 
         for row in 0..<rows {
             for col in 0..<cols {
-                if grid[row][col] == "@" && isAccessible(row: row, col: col) {
+                if grid[row][col] == "." && isAccessible(row: row, col: col) {
                     result += "x"
                 } else {
                     result += String(grid[row][col])
