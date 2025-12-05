@@ -46,13 +46,6 @@ print(sampleResult == 13 ? "✓ Sample test PASSED\n" : "✗ Sample test FAILED\
 print("Solving Part 1...")
 if let content = actualInput {
     let department = PrintingDepartment(gridString: content)
-
-    // Debug: print grid info
-    let lines = content.split(separator: "\n")
-    print("Grid: \(lines.count) rows")
-    let totalAt = content.filter { $0 == "@" }.count
-    print("Total @ symbols: \(totalAt)")
-
     let result = department.countAccessibleRolls()
     print("Part 1 Answer: \(result)")
     print("\nTotal accessible rolls: \(result)")
