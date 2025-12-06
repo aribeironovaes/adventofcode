@@ -43,6 +43,39 @@ class IngredientDatabase {
         return ingredientIDs.filter { isFresh($0) }.count
     }
 
+    // MARK: - Part 2: Total Fresh IDs Across All Ranges
+
+    /// Count total number of unique IDs covered by all ranges
+    /// Merges overlapping ranges to avoid double-counting
+    func countTotalFreshIDs() -> Int {
+        // Sort ranges by start position
+        let sortedRanges = ranges.sorted { $0.start < $1.start }
+
+        guard !sortedRanges.isEmpty else { return 0 }
+
+        // Merge overlapping ranges and count total coverage
+        var totalCount = 0
+        var currentStart = sortedRanges[0].start
+        var currentEnd = sortedRanges[0].end
+
+        for range in sortedRanges.dropFirst() {
+            if range.start <= currentEnd + 1 {
+                // Overlapping or adjacent - extend current range
+                currentEnd = max(currentEnd, range.end)
+            } else {
+                // Gap found - count current range and start new one
+                totalCount += currentEnd - currentStart + 1
+                currentStart = range.start
+                currentEnd = range.end
+            }
+        }
+
+        // Count the last range
+        totalCount += currentEnd - currentStart + 1
+
+        return totalCount
+    }
+
     /// Parse database from input string
     static func parse(from input: String) -> IngredientDatabase? {
         let sections = input.components(separatedBy: "\n\n")

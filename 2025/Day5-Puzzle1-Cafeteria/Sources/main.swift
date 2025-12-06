@@ -37,3 +37,28 @@ if let content = actualInput, let database = IngredientDatabase.parse(from: cont
 } else {
     print("Could not parse input.txt")
 }
+
+// MARK: - Part 2: Total Fresh IDs Across All Ranges
+
+print("\n--- Part 2: Total Fresh IDs Across All Ranges ---\n")
+
+// Test with sample
+print("Testing with sample input...")
+if let content = sampleInput, let database = IngredientDatabase.parse(from: content) {
+    let result = database.countTotalFreshIDs()
+    print("Sample result: \(result)")
+    print("Expected: 14")
+    print(result == 14 ? "✓ Sample test PASSED\n" : "✗ Sample test FAILED\n")
+} else {
+    print("Could not parse sample.txt\n")
+}
+
+// Solve Part 2
+print("Solving Part 2...")
+if let content = actualInput, let database = IngredientDatabase.parse(from: content) {
+    let result = database.countTotalFreshIDs()
+    print("Part 2 Answer: \(result)")
+    print("\nTotal unique fresh IDs: \(result)")
+} else {
+    print("Could not parse input.txt")
+}
