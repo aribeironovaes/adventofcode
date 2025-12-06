@@ -2,7 +2,7 @@ import Foundation
 
 /// PrintingDepartment handles the grid of paper rolls and checks accessibility
 class PrintingDepartment {
-    private let grid: [[Character]]
+    private var grid: [[Character]]  // Mutable for Part 2
     private let rows: Int
     private let cols: Int
 
@@ -73,6 +73,46 @@ class PrintingDepartment {
         }
 
         return count
+    }
+
+    // MARK: - Part 2: Iterative Removal
+
+    /// Remove all accessible rolls and return how many were removed
+    /// Modifies the grid by replacing accessible @ with .
+    private func removeAccessibleRolls() -> Int {
+        var removed: [(Int, Int)] = []
+
+        // Find all accessible rolls
+        for row in 0..<grid.count {
+            for col in 0..<grid[row].count {
+                if isAccessible(row: row, col: col) {
+                    removed.append((row, col))
+                }
+            }
+        }
+
+        // Remove them (replace with .)
+        for (row, col) in removed {
+            grid[row][col] = "."
+        }
+
+        return removed.count
+    }
+
+    /// Keep removing accessible rolls until none remain
+    /// Returns total number of rolls removed
+    func removeAllAccessibleRolls() -> Int {
+        var totalRemoved = 0
+
+        while true {
+            let removed = removeAccessibleRolls()
+            if removed == 0 {
+                break
+            }
+            totalRemoved += removed
+        }
+
+        return totalRemoved
     }
 
     /// Get a visual representation showing accessible rolls

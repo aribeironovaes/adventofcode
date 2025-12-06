@@ -52,3 +52,26 @@ if let content = actualInput {
 } else {
     print("Could not read input.txt")
 }
+
+// MARK: - Part 2: Iterative Removal
+
+print("\n--- Part 2: Iterative Removal ---\n")
+
+// Test with sample
+print("Testing with sample input...")
+let sampleDepartmentPart2 = PrintingDepartment(gridString: sampleInput)
+let sampleResultPart2 = sampleDepartmentPart2.removeAllAccessibleRolls()
+print("Sample result: \(sampleResultPart2)")
+print("Expected: 43")
+print(sampleResultPart2 == 43 ? "✓ Sample test PASSED\n" : "✗ Sample test FAILED\n")
+
+// Solve Part 2
+print("Solving Part 2...")
+if let content = actualInput {
+    let department = PrintingDepartment(gridString: content)
+    let result = department.removeAllAccessibleRolls()
+    print("Part 2 Answer: \(result)")
+    print("\nTotal rolls removed: \(result)")
+} else {
+    print("Could not read input.txt")
+}
