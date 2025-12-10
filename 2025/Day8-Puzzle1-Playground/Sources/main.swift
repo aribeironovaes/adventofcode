@@ -38,3 +38,28 @@ if let content = actualInput, let network = JunctionBoxNetwork(from: content) {
 } else {
     print("Could not parse input.txt")
 }
+
+// MARK: - Part 2: Connect Until Single Circuit
+
+print("\n--- Part 2: Final Connection ---\n")
+
+// Test with sample
+print("Testing with sample input...")
+if let content = sampleInput, let network = JunctionBoxNetwork(from: content) {
+    let result = network.connectUntilSingleCircuit()
+    print("Sample result: \(result)")
+    print("Expected: 25272")
+    print(result == 25272 ? "✓ Sample test PASSED\n" : "✗ Sample test FAILED\n")
+} else {
+    print("Could not parse sample.txt\n")
+}
+
+// Solve Part 2
+print("Solving Part 2...")
+if let content = actualInput, let network = JunctionBoxNetwork(from: content) {
+    let result = network.connectUntilSingleCircuit()
+    print("Part 2 Answer: \(result)")
+    print("\nProduct of X coordinates: \(result)")
+} else {
+    print("Could not parse input.txt")
+}

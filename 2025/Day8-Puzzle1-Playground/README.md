@@ -74,6 +74,43 @@ Operations are nearly O(1) with path compression and union by rank (amortized O(
 
 - **Part 1 Answer**: `105952`
   - Sample test: 40 ✓
+- **Part 2 Answer**: `975931446`
+  - Sample test: 25272 ✓
+
+## Part 2: Connect Until Single Circuit
+
+### Problem
+
+Continue connecting the closest pairs of junction boxes until all boxes form a single circuit. Find the last connection that completes the circuit and return the product of the X coordinates of those two boxes.
+
+#### Example
+
+Continuing from Part 1 with 20 junction boxes:
+- After the 10 shortest edges, there are 11 circuits
+- Keep connecting shortest unconnected pairs
+- The final connection that unifies everything is between boxes at positions:
+  - `216,146,977` (X = 216)
+  - `117,168,530` (X = 117)
+- Product: 216 × 117 = **25272**
+
+### Algorithm
+
+1. **Start with all boxes as separate components** (N components)
+2. **Process edges in order of increasing distance**:
+   - For each edge, attempt to union the two boxes
+   - If successful (boxes were in different components):
+     - Decrement component count
+     - Check if component count = 1 (all connected)
+     - If yes, return product of X coordinates
+3. **Return product** when single circuit is formed
+
+### Key Insight
+
+This is essentially building a complete Minimum Spanning Tree (MST):
+- Part 1: Stop after N edges (partial MST forest)
+- Part 2: Continue until N-1 successful connections (complete MST)
+
+With N junction boxes, we need exactly N-1 edges to form a single connected component.
 
 ## Implementation Details
 
@@ -97,7 +134,8 @@ Operations are nearly O(1) with path compression and union by rank (amortized O(
 
 - `JunctionBoxNetwork`: Manages junction box connections
   - `init(from:)`: Parse 3D coordinates
-  - `connectShortestEdges(_:)`: Process N shortest edges and return product
+  - `connectShortestEdges(_:)`: Process N shortest edges and return product (Part 1)
+  - `connectUntilSingleCircuit()`: Connect until single circuit, return X-coordinate product (Part 2)
 
 - `UnionFind`: Tracks connected components
   - `find(_:)`: Find root with path compression

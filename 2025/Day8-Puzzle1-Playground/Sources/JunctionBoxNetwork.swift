@@ -86,4 +86,29 @@ class JunctionBoxNetwork {
 
         return sizes[0] * sizes[1] * sizes[2]
     }
+
+    /// Connect edges until all junction boxes form a single circuit
+    /// Returns the product of X coordinates of the last two boxes connected
+    func connectUntilSingleCircuit() -> Int {
+        let uf = UnionFind(size: points.count)
+        var numComponents = points.count
+
+        // Keep connecting until we have a single component
+        for edge in edges {
+            if uf.union(edge.from, edge.to) {
+                numComponents -= 1
+
+                // Check if we've connected everything into one circuit
+                if numComponents == 1 {
+                    // This was the final connection
+                    let x1 = points[edge.from].x
+                    let x2 = points[edge.to].x
+                    return x1 * x2
+                }
+            }
+        }
+
+        // Should not reach here if input is valid
+        return 0
+    }
 }
