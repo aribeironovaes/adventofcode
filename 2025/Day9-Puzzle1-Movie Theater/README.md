@@ -79,6 +79,71 @@ For tiles (2,5) and (11,1):
 
 - **Part 1 Answer**: `4790063600`
   - Sample test: 50 ✓
+- **Part 2 Answer**: `4583207265`
+  - Sample test: 24 ✓
+
+## Part 2: Rectangle with Red/Green Tiles Only
+
+### Problem
+
+Now rectangles can only contain red or green tiles. Green tiles are:
+1. **Boundary**: Tiles connecting consecutive red tiles in the input order
+2. **Interior**: All tiles inside the closed polygon formed by the red tiles
+
+The input order matters! Red tiles form a polygon when connected in sequence, and this polygon wraps (first connects to last).
+
+#### Example
+
+With the same 8 red tiles forming a polygon:
+- Green boundary tiles connect each consecutive pair
+- Green interior tiles fill the polygon
+- Rectangle must have red corners
+- Rectangle can only contain red/green tiles (no other tiles)
+
+Maximum area: **24** (e.g., between tiles (9,5) and (2,3))
+
+### Algorithm
+
+1. **Polygon representation**: Red tiles in input order form polygon vertices
+2. **For each pair of red tiles**:
+   - Check if rectangle's four corners are all inside/on the polygon
+   - If yes, entire rectangle is valid (polygon property)
+   - Calculate area if valid
+3. **Return maximum area**
+
+### Optimization
+
+Instead of materializing all green tiles (could be millions with large coordinates):
+- **Use ray casting** to check if points are inside polygon
+- **Check boundary** explicitly for edge cases
+- Only validate the 4 rectangle corners, not every interior tile
+
+This reduces complexity from O(N² × Area) to O(N² × Polygon_Vertices).
+
+### Point-in-Polygon Test
+
+**Ray Casting Algorithm**:
+Cast a ray from the point to infinity and count edge crossings:
+- Odd crossings = inside
+- Even crossings = outside
+
+```swift
+func isInsidePolygon(_ point: Point) -> Bool {
+    var inside = false
+    for i in 0..<n {
+        let vi = vertices[i]
+        let vj = vertices[j]
+        if ((vi.y > point.y) != (vj.y > point.y)) &&
+           (point.x < (vj.x - vi.x) * (point.y - vi.y) / (vj.y - vi.y) + vi.x) {
+            inside.toggle()
+        }
+    }
+    return inside
+}
+```
+
+**Boundary Check**:
+For each edge of polygon, check if point lies on the line segment.
 
 ## Implementation Details
 
@@ -93,7 +158,10 @@ For tiles (2,5) and (11,1):
 
 - `TileRectangleFinder`: Finds largest rectangle
   - `init(from:)`: Parse tile coordinates
-  - `findLargestRectangleArea()`: Try all pairs, return max area
+  - `findLargestRectangleArea()`: Try all pairs, return max area (Part 1)
+  - `findLargestRectangleWithGreen()`: Try pairs with polygon constraint (Part 2)
+  - `isInsidePolygon(_:)`: Ray casting point-in-polygon test
+  - `isOnBoundary(_:)`: Check if point is on polygon edge
 
 ### Files
 
@@ -114,26 +182,47 @@ swiftc Sources/*.swift -o solve && ./solve
 ### Time Complexity
 
 - **Parsing**: O(N) where N = number of red tiles
-- **Pair enumeration**: O(N²) to check all pairs
-- **Area calculation**: O(1) per pair
-- **Overall**: O(N²)
+- **Part 1 - Pair enumeration**: O(N²) to check all pairs
+- **Part 2 - Pair enumeration**: O(N²) pairs
+- **Part 2 - Polygon test per pair**: O(N) for ray casting
+- **Part 2 Overall**: O(N³)
 
-For typical inputs with hundreds of tiles, this completes instantly.
+For N ≈ 200-300 tiles:
+- Part 1: ~40,000-90,000 operations (instant)
+- Part 2: ~8-27 million operations (still fast, sub-second)
 
 ### Space Complexity
 
 - **Tile storage**: O(N) for storing coordinates
 - **Overall**: O(N)
 
-### Why No Optimization Needed
+No need to materialize green tiles (which could be O(Area) with large coordinates).
 
-With N ≈ 200-300 tiles (typical Advent of Code size):
-- N² ≈ 40,000-90,000 operations
-- Each operation is simple arithmetic (subtraction, absolute value, addition, multiplication)
-- Modern computers handle millions of such operations per second
-- No need for spatial indexing, sweep line algorithms, or other optimizations
+## Computational Geometry Concepts
 
-## Mathematical Properties
+### Point-in-Polygon
+
+Classic problem with multiple solutions:
+1. **Ray Casting** (used here): O(N) per query
+2. **Winding Number**: O(N) per query
+3. **Preprocessing**: Can reduce to O(log N) with complex structures
+
+### Rectangle Validation
+
+Key insight: If all 4 corners of an axis-aligned rectangle are inside a polygon, the entire rectangle is inside (assuming convex or reasonable polygon shape).
+
+This works because:
+- Rectangle edges are straight lines
+- If corners are inside, no edge can escape and re-enter
+- Avoids checking potentially millions of interior tiles
+
+### Edge Cases Handled
+
+- **Points on boundary**: Explicitly checked with `isOnBoundary`
+- **Red tile corners**: Always valid (part of polygon vertices)
+- **Degenerate rectangles**: Width or height = 1 (still valid)
+
+## Potential Extensions
 
 ### Rectangle Area Formula
 

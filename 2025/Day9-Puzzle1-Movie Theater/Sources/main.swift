@@ -38,3 +38,28 @@ if let content = actualInput, let finder = TileRectangleFinder(from: content) {
 } else {
     print("Could not parse input.txt")
 }
+
+// MARK: - Part 2: Rectangle with Only Red/Green Tiles
+
+print("\n--- Part 2: Rectangle with Red/Green Tiles ---\n")
+
+// Test with sample
+print("Testing with sample input...")
+if let content = sampleInput, let finder = TileRectangleFinder(from: content) {
+    let result = finder.findLargestRectangleWithGreen()
+    print("Sample result: \(result)")
+    print("Expected: 24")
+    print(result == 24 ? "✓ Sample test PASSED\n" : "✗ Sample test FAILED\n")
+} else {
+    print("Could not parse sample.txt\n")
+}
+
+// Solve Part 2
+print("Solving Part 2...")
+if let content = actualInput, let finder = TileRectangleFinder(from: content) {
+    let result = finder.findLargestRectangleWithGreen()
+    print("Part 2 Answer: \(result)")
+    print("\nLargest rectangle with red/green tiles: \(result)")
+} else {
+    print("Could not parse input.txt")
+}
