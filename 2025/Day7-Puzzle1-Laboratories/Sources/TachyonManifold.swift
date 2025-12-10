@@ -87,4 +87,39 @@ class TachyonManifold {
 
         return splitCount
     }
+
+    /// Count quantum timelines - number of unique paths through the manifold
+    /// For quantum splitting, a single particle takes both paths at each splitter
+    func countQuantumTimelines() -> Int {
+        // Track the number of distinct paths to each column position
+        // Dictionary: [column: number of paths reaching this column]
+        var pathCounts: [Int: Int] = [startCol: 1]
+
+        for row in 1..<rows {
+            var nextPathCounts: [Int: Int] = [:]
+
+            for (col, count) in pathCounts {
+                let char = grid[row][col]
+
+                if char == "^" {
+                    // Splitter - particle takes both paths (left and right)
+                    // Each path splits into two, so we add the count to both directions
+                    if col > 0 {
+                        nextPathCounts[col - 1, default: 0] += count
+                    }
+                    if col < cols - 1 {
+                        nextPathCounts[col + 1, default: 0] += count
+                    }
+                } else {
+                    // Empty space - particle continues downward
+                    nextPathCounts[col, default: 0] += count
+                }
+            }
+
+            pathCounts = nextPathCounts
+        }
+
+        // Sum up all paths that reached the bottom
+        return pathCounts.values.reduce(0, +)
+    }
 }

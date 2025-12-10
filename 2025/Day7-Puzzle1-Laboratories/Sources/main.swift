@@ -40,3 +40,28 @@ if let content = actualInput, let manifold = TachyonManifold(from: content) {
 } else {
     print("Could not parse input.txt")
 }
+
+// MARK: - Part 2: Quantum Timelines
+
+print("\n--- Part 2: Quantum Timelines ---\n")
+
+// Test with sample
+print("Testing with sample input...")
+if let content = sampleInput, let manifold = TachyonManifold(from: content) {
+    let result = manifold.countQuantumTimelines()
+    print("Sample result: \(result)")
+    print("Expected: 40")
+    print(result == 40 ? "✓ Sample test PASSED\n" : "✗ Sample test FAILED\n")
+} else {
+    print("Could not parse sample.txt\n")
+}
+
+// Solve Part 2
+print("Solving Part 2...")
+if let content = actualInput, let manifold = TachyonManifold(from: content) {
+    let result = manifold.countQuantumTimelines()
+    print("Part 2 Answer: \(result)")
+    print("\nTotal quantum timelines: \(result)")
+} else {
+    print("Could not parse input.txt")
+}
