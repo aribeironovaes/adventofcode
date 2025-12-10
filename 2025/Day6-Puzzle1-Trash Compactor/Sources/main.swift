@@ -38,3 +38,28 @@ if let content = actualInput, let worksheet = MathWorksheet.parse(from: content)
 } else {
     print("Could not parse input.txt")
 }
+
+// MARK: - Part 2: Cephalopod Math (Read Right-to-Left)
+
+print("\n--- Part 2: Cephalopod Math ---\n")
+
+// Test with sample
+print("Testing with sample input...")
+if let content = sampleInput, let worksheet = MathWorksheet.parseCephalopod(from: content) {
+    let result = worksheet.calculateGrandTotal()
+    print("Sample result: \(result)")
+    print("Expected: 3263827")
+    print(result == 3263827 ? "✓ Sample test PASSED\n" : "✗ Sample test FAILED\n")
+} else {
+    print("Could not parse sample.txt\n")
+}
+
+// Solve Part 2
+print("Solving Part 2...")
+if let content = actualInput, let worksheet = MathWorksheet.parseCephalopod(from: content) {
+    let result = worksheet.calculateGrandTotal()
+    print("Part 2 Answer: \(result)")
+    print("\nGrand total (Cephalopod math): \(result)")
+} else {
+    print("Could not parse input.txt")
+}
