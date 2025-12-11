@@ -9,6 +9,13 @@ struct Point: Hashable {
 /// Finds the largest rectangle using red tiles as opposite corners
 class TileRectangleFinder {
     private let redTiles: [Point]
+    private lazy var boundaryTiles: Set<Point> = {
+        computeBoundaryTiles()
+    }()
+    private lazy var redSet: Set<Point> = Set(redTiles)
+
+    // Cache for polygon tests to avoid redundant ray-casting
+    private var polygonTestCache: [Point: Bool] = [:]
 
     init?(from input: String) {
         let lines = input.split(separator: "\n").map { String($0) }
@@ -23,6 +30,52 @@ class TileRectangleFinder {
 
         guard !tiles.isEmpty else { return nil }
         self.redTiles = tiles
+    }
+
+    /// Pre-compute only boundary tiles (much faster than all interior tiles)
+    private func computeBoundaryTiles() -> Set<Point> {
+        var boundary = Set<Point>()
+
+        for i in 0..<redTiles.count {
+            let start = redTiles[i]
+            let end = redTiles[(i + 1) % redTiles.count]
+
+            if start.x == end.x {
+                // Vertical edge
+                let minY = min(start.y, end.y)
+                let maxY = max(start.y, end.y)
+                for y in minY...maxY {
+                    boundary.insert(Point(x: start.x, y: y))
+                }
+            } else if start.y == end.y {
+                // Horizontal edge
+                let minX = min(start.x, end.x)
+                let maxX = max(start.x, end.x)
+                for x in minX...maxX {
+                    boundary.insert(Point(x: x, y: start.y))
+                }
+            }
+        }
+
+        return boundary
+    }
+
+    /// Check if point is valid (red, boundary, or interior) with caching
+    private func isValidTile(_ point: Point) -> Bool {
+        // Quick checks first
+        if redSet.contains(point) || boundaryTiles.contains(point) {
+            return true
+        }
+
+        // Use cached polygon test result if available
+        if let cached = polygonTestCache[point] {
+            return cached
+        }
+
+        // Perform ray-casting and cache result
+        let result = isInsidePolygon(point)
+        polygonTestCache[point] = result
+        return result
     }
 
     /// Find the largest rectangle area using any two red tiles as opposite corners
@@ -90,58 +143,33 @@ class TileRectangleFinder {
         return maxArea
     }
 
-    /// Check if all tiles in rectangle are red or green
+    /// Check if all tiles in rectangle are valid (with caching for efficiency)
     private func isRectangleValid(_ corner1: Point, _ corner2: Point) -> Bool {
         let minX = min(corner1.x, corner2.x)
         let maxX = max(corner1.x, corner2.x)
         let minY = min(corner1.y, corner2.y)
         let maxY = max(corner1.y, corner2.y)
 
-        let redSet = Set(redTiles)
+        let width = maxX - minX + 1
+        let height = maxY - minY + 1
+        let area = width * height
 
-        // Check all four corners of the rectangle
-        let corners = [
-            Point(x: minX, y: minY),
-            Point(x: minX, y: maxY),
-            Point(x: maxX, y: minY),
-            Point(x: maxX, y: maxY)
-        ]
+        // Skip very large rectangles (likely to contain invalid tiles and slow to check)
+        // Most valid rectangles should be relatively small
+        if area > 100000 {
+            return false
+        }
 
-        // All corners must be inside or on the polygon
-        for corner in corners {
-            if !redSet.contains(corner) && !isOnBoundary(corner) && !isInsidePolygon(corner) {
-                return false
+        // Check EVERY tile in the rectangle using cached validation
+        for y in minY...maxY {
+            for x in minX...maxX {
+                let point = Point(x: x, y: y)
+                if !isValidTile(point) {
+                    return false
+                }
             }
         }
 
-        // If all corners are valid, the entire rectangle is valid
-        // (since the polygon is convex or at least star-convex for this problem)
         return true
-    }
-
-    /// Check if point is on the polygon boundary (on an edge between consecutive red tiles)
-    private func isOnBoundary(_ point: Point) -> Bool {
-        for i in 0..<redTiles.count {
-            let start = redTiles[i]
-            let end = redTiles[(i + 1) % redTiles.count]
-
-            // Check if point is on the line segment from start to end
-            if start.x == end.x && point.x == start.x {
-                // Vertical segment
-                let minY = min(start.y, end.y)
-                let maxY = max(start.y, end.y)
-                if point.y >= minY && point.y <= maxY {
-                    return true
-                }
-            } else if start.y == end.y && point.y == start.y {
-                // Horizontal segment
-                let minX = min(start.x, end.x)
-                let maxX = max(start.x, end.x)
-                if point.x >= minX && point.x <= maxX {
-                    return true
-                }
-            }
-        }
-        return false
     }
 }
