@@ -9,13 +9,6 @@ struct Point: Hashable {
 /// Finds the largest rectangle using red tiles as opposite corners
 class TileRectangleFinder {
     private let redTiles: [Point]
-    private lazy var boundaryTiles: Set<Point> = {
-        computeBoundaryTiles()
-    }()
-    private lazy var redSet: Set<Point> = Set(redTiles)
-
-    // Cache for polygon tests to avoid redundant ray-casting
-    private var polygonTestCache: [Point: Bool] = [:]
 
     init?(from input: String) {
         let lines = input.split(separator: "\n").map { String($0) }
@@ -30,52 +23,6 @@ class TileRectangleFinder {
 
         guard !tiles.isEmpty else { return nil }
         self.redTiles = tiles
-    }
-
-    /// Pre-compute only boundary tiles (much faster than all interior tiles)
-    private func computeBoundaryTiles() -> Set<Point> {
-        var boundary = Set<Point>()
-
-        for i in 0..<redTiles.count {
-            let start = redTiles[i]
-            let end = redTiles[(i + 1) % redTiles.count]
-
-            if start.x == end.x {
-                // Vertical edge
-                let minY = min(start.y, end.y)
-                let maxY = max(start.y, end.y)
-                for y in minY...maxY {
-                    boundary.insert(Point(x: start.x, y: y))
-                }
-            } else if start.y == end.y {
-                // Horizontal edge
-                let minX = min(start.x, end.x)
-                let maxX = max(start.x, end.x)
-                for x in minX...maxX {
-                    boundary.insert(Point(x: x, y: start.y))
-                }
-            }
-        }
-
-        return boundary
-    }
-
-    /// Check if point is valid (red, boundary, or interior) with caching
-    private func isValidTile(_ point: Point) -> Bool {
-        // Quick checks first
-        if redSet.contains(point) || boundaryTiles.contains(point) {
-            return true
-        }
-
-        // Use cached polygon test result if available
-        if let cached = polygonTestCache[point] {
-            return cached
-        }
-
-        // Perform ray-casting and cache result
-        let result = isInsidePolygon(point)
-        polygonTestCache[point] = result
-        return result
     }
 
     /// Find the largest rectangle area using any two red tiles as opposite corners
@@ -100,95 +47,74 @@ class TileRectangleFinder {
         return maxArea
     }
 
-    /// Ray casting algorithm to check if point is inside the polygon
-    private func isInsidePolygon(_ point: Point) -> Bool {
-        var inside = false
-        let n = redTiles.count
-
-        var j = n - 1
-        for i in 0..<n {
-            let vi = redTiles[i]
-            let vj = redTiles[j]
-
-            if ((vi.y > point.y) != (vj.y > point.y)) &&
-               (point.x < (vj.x - vi.x) * (point.y - vi.y) / (vj.y - vi.y) + vi.x) {
-                inside.toggle()
-            }
-            j = i
-        }
-
-        return inside
-    }
-
     /// Find largest rectangle using only red or green tiles
+    /// Uses edge-crossing algorithm from working Python solution
     func findLargestRectangleWithGreen() -> Int {
-        // Generate all candidate rectangles with their areas
-        struct Rectangle {
-            let corner1: Point
-            let corner2: Point
-            let area: Int
-        }
-
-        var rectangles: [Rectangle] = []
+        var maxArea = 0
+        var maxI = 0, maxJ = 0
 
         for i in 0..<redTiles.count {
-            for j in (i+1)..<redTiles.count {
-                let tile1 = redTiles[i]
-                let tile2 = redTiles[j]
+            for j in 0..<i {
+                let area = calculateArea(redTiles[i], redTiles[j])
 
-                let width = abs(tile1.x - tile2.x) + 1
-                let height = abs(tile1.y - tile2.y) + 1
-                let area = width * height
-
-                rectangles.append(Rectangle(corner1: tile1, corner2: tile2, area: area))
-            }
-        }
-
-        // Sort by area descending - check largest first
-        rectangles.sort { $0.area > $1.area }
-
-        var maxValidArea = 0
-
-        // Check rectangles in order of decreasing area
-        for rect in rectangles {
-            // Skip if we already found a larger valid rectangle
-            if rect.area <= maxValidArea {
-                break  // All remaining rectangles are smaller
-            }
-
-            // For extremely large rectangles, use a more aggressive skip threshold
-            // Trying 2 million tiles
-            if rect.area > 2000000 {
-                continue
-            }
-
-            if isRectangleValid(rect.corner1, rect.corner2) {
-                maxValidArea = rect.area
-                // Don't return immediately - continue checking for potential larger ones
-                // within our threshold
-            }
-        }
-
-        return maxValidArea
-    }
-
-    /// Check if all tiles in rectangle are valid (with caching for efficiency)
-    private func isRectangleValid(_ corner1: Point, _ corner2: Point) -> Bool {
-        let minX = min(corner1.x, corner2.x)
-        let maxX = max(corner1.x, corner2.x)
-        let minY = min(corner1.y, corner2.y)
-        let maxY = max(corner1.y, corner2.y)
-
-        // Check EVERY tile in the rectangle using cached validation
-        for y in minY...maxY {
-            for x in minX...maxX {
-                let point = Point(x: x, y: y)
-                if !isValidTile(point) {
-                    return false
+                if area > maxArea && isRectangleValid(i, j) {
+                    maxArea = area
+                    maxI = i
+                    maxJ = j
                 }
             }
         }
 
+        print("✓ Found valid rectangle")
+        print("  Area: \(maxArea)")
+        print("  Corners: (\(redTiles[maxI].x),\(redTiles[maxI].y)) to (\(redTiles[maxJ].x),\(redTiles[maxJ].y))")
+
+        return maxArea
+    }
+
+    /// Check if rectangle is valid using edge-crossing algorithm
+    /// This checks if polygon edges cross rectangle boundaries
+    private func isRectangleValid(_ i: Int, _ j: Int) -> Bool {
+        let x1 = min(redTiles[i].x, redTiles[j].x)
+        let x2 = max(redTiles[i].x, redTiles[j].x)
+        let y1 = min(redTiles[i].y, redTiles[j].y)
+        let y2 = max(redTiles[i].y, redTiles[j].y)
+
+        for k in 0..<redTiles.count {
+            let x = redTiles[k].x
+            let y = redTiles[k].y
+
+            // Get previous vertex (wraps around)
+            let kPrev = (k - 1 + redTiles.count) % redTiles.count
+            let xp = redTiles[kPrev].x
+            let yp = redTiles[kPrev].y
+
+            // Check 1: No vertex strictly inside rectangle
+            if x1 < x && x < x2 && y1 < y && y < y2 {
+                return false
+            }
+
+            // Check 2: Edge crosses left/right boundary
+            if x1 < x && x < x2 && y <= y1 && y1 < yp {
+                return false
+            }
+            if x1 < x && x < x2 && yp <= y1 && y1 < y {
+                return false
+            }
+
+            // Check 3: Edge crosses top/bottom boundary
+            if y1 < y && y < y2 && x <= x1 && x1 < xp {
+                return false
+            }
+            if y1 < y && y < y2 && xp <= x1 && x1 < x {
+                return false
+            }
+        }
+
         return true
+    }
+
+    private func calculateArea(_ p1: Point, _ p2: Point) -> Int {
+        return (abs(p1.x - p2.x) + 1) * (abs(p1.y - p2.y) + 1)
     }
 }

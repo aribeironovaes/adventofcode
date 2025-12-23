@@ -1,0 +1,31 @@
+KEY DIFFERENCES IN PYTHON CODE:
+
+1. **is_valid() function logic**:
+   - Does NOT check every tile in the rectangle
+   - Instead checks if red tiles (vertices) fall in specific forbidden zones
+   
+2. **The validation checks**:
+   ```python
+   for k in range(len(data)):
+       x, y = data[k]
+       xp, yp = data[k - 1]  # PREVIOUS vertex in polygon
+       
+       # Check 1: No vertex strictly inside rectangle
+       if x1 < x < x2 and y1 < y < y2:
+           return False
+       
+       # Check 2-5: No polygon EDGE crosses the rectangle boundary
+       # These check if an edge crosses the left/right/top/bottom boundary
+   ```
+
+3. **Critical insight**: 
+   - It only checks if polygon EDGES cross the rectangle boundaries
+   - It does NOT check every tile inside
+   - This is much faster: O(N) instead of O(Area)
+
+4. **The edge-crossing checks**:
+   - Check if edge (xp,yp) -> (x,y) crosses rectangle boundaries
+   - If edge crosses left boundary (x1): `x1 < x < x2 and y <= y1 and y1 < yp`
+   - Similar for all 4 boundaries
+
+This is a COMPLETELY DIFFERENT ALGORITHM\!

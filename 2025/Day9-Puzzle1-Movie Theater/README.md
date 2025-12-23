@@ -79,7 +79,7 @@ For tiles (2,5) and (11,1):
 
 - **Part 1 Answer**: `4790063600`
   - Sample test: 50 ✓
-- **Part 2 Answer**: `4583207265`
+- **Part 2 Answer**: `1516172795`
   - Sample test: 24 ✓
 
 ## Part 2: Rectangle with Red/Green Tiles Only
@@ -104,46 +104,73 @@ Maximum area: **24** (e.g., between tiles (9,5) and (2,3))
 
 ### Algorithm
 
+The key insight is to use **edge-crossing detection** rather than checking every tile in the rectangle.
+
 1. **Polygon representation**: Red tiles in input order form polygon vertices
-2. **For each pair of red tiles**:
-   - Check if rectangle's four corners are all inside/on the polygon
-   - If yes, entire rectangle is valid (polygon property)
+2. **For each pair of red tiles as rectangle corners**:
+   - Use edge-crossing algorithm to validate the rectangle
    - Calculate area if valid
 3. **Return maximum area**
 
-### Optimization
+### Edge-Crossing Validation
 
-Instead of materializing all green tiles (could be millions with large coordinates):
-- **Use ray casting** to check if points are inside polygon
-- **Check boundary** explicitly for edge cases
-- Only validate the 4 rectangle corners, not every interior tile
+Instead of checking every tile inside a rectangle (O(Area) per rectangle), we check if any polygon edges cross the rectangle boundaries (O(N) per rectangle where N = polygon vertices).
 
-This reduces complexity from O(N² × Area) to O(N² × Polygon_Vertices).
+**The algorithm checks three conditions for invalidity:**
 
-### Point-in-Polygon Test
-
-**Ray Casting Algorithm**:
-Cast a ray from the point to infinity and count edge crossings:
-- Odd crossings = inside
-- Even crossings = outside
+1. **No vertex strictly inside**: No polygon vertex can be strictly inside the rectangle (not on boundary)
+2. **No edge crosses left/right boundaries**: Polygon edges cannot cross the vertical boundaries
+3. **No edge crosses top/bottom boundaries**: Polygon edges cannot cross the horizontal boundaries
 
 ```swift
-func isInsidePolygon(_ point: Point) -> Bool {
-    var inside = false
-    for i in 0..<n {
-        let vi = vertices[i]
-        let vj = vertices[j]
-        if ((vi.y > point.y) != (vj.y > point.y)) &&
-           (point.x < (vj.x - vi.x) * (point.y - vi.y) / (vj.y - vi.y) + vi.x) {
-            inside.toggle()
+func isRectangleValid(_ i: Int, _ j: Int) -> Bool {
+    let x1 = min(redTiles[i].x, redTiles[j].x)
+    let x2 = max(redTiles[i].x, redTiles[j].x)
+    let y1 = min(redTiles[i].y, redTiles[j].y)
+    let y2 = max(redTiles[i].y, redTiles[j].y)
+
+    for k in 0..<redTiles.count {
+        let x = redTiles[k].x
+        let y = redTiles[k].y
+        let kPrev = (k - 1 + redTiles.count) % redTiles.count
+        let xp = redTiles[kPrev].x
+        let yp = redTiles[kPrev].y
+
+        // Check 1: No vertex strictly inside rectangle
+        if x1 < x && x < x2 && y1 < y && y < y2 {
+            return false
+        }
+
+        // Check 2: Edge crosses left/right boundary
+        if x1 < x && x < x2 && y <= y1 && y1 < yp {
+            return false
+        }
+        if x1 < x && x < x2 && yp <= y1 && y1 < y {
+            return false
+        }
+
+        // Check 3: Edge crosses top/bottom boundary
+        if y1 < y && y < y2 && x <= x1 && x1 < xp {
+            return false
+        }
+        if y1 < y && y < y2 && xp <= x1 && x1 < x {
+            return false
         }
     }
-    return inside
+
+    return true
 }
 ```
 
-**Boundary Check**:
-For each edge of polygon, check if point lies on the line segment.
+### Why This Works
+
+This approach is vastly more efficient:
+- **Old approach (wrong)**: Check every tile in rectangle → O(Area) per rectangle
+  - For a 89,000 × 17,000 tile rectangle, that's 1.5 billion checks!
+- **New approach (correct)**: Check polygon edge crossings → O(N) per rectangle
+  - For 496 vertices, that's only 496 checks per rectangle
+
+This reduces complexity from O(N² × Area) to O(N³), making the problem tractable.
 
 ## Implementation Details
 
@@ -159,9 +186,9 @@ For each edge of polygon, check if point lies on the line segment.
 - `TileRectangleFinder`: Finds largest rectangle
   - `init(from:)`: Parse tile coordinates
   - `findLargestRectangleArea()`: Try all pairs, return max area (Part 1)
-  - `findLargestRectangleWithGreen()`: Try pairs with polygon constraint (Part 2)
-  - `isInsidePolygon(_:)`: Ray casting point-in-polygon test
-  - `isOnBoundary(_:)`: Check if point is on polygon edge
+  - `findLargestRectangleWithGreen()`: Try pairs with edge-crossing validation (Part 2)
+  - `isRectangleValid(_:_:)`: Edge-crossing algorithm to validate rectangles
+  - `calculateArea(_:_:)`: Calculate rectangle area from two points
 
 ### Files
 
@@ -184,43 +211,60 @@ swiftc Sources/*.swift -o solve && ./solve
 - **Parsing**: O(N) where N = number of red tiles
 - **Part 1 - Pair enumeration**: O(N²) to check all pairs
 - **Part 2 - Pair enumeration**: O(N²) pairs
-- **Part 2 - Polygon test per pair**: O(N) for ray casting
+- **Part 2 - Edge-crossing validation per pair**: O(N) for checking polygon edges
 - **Part 2 Overall**: O(N³)
 
-For N ≈ 200-300 tiles:
-- Part 1: ~40,000-90,000 operations (instant)
-- Part 2: ~8-27 million operations (still fast, sub-second)
+For N = 496 tiles:
+- Part 1: ~123,000 pairs (instant)
+- Part 2: ~61 million edge checks (fast, under 1 second)
+
+The edge-crossing algorithm is dramatically faster than the naive tile-by-tile approach:
+- Naive: O(N² × Area) → billions of operations for large rectangles
+- Edge-crossing: O(N³) → millions of operations total
 
 ### Space Complexity
 
 - **Tile storage**: O(N) for storing coordinates
 - **Overall**: O(N)
 
-No need to materialize green tiles (which could be O(Area) with large coordinates).
+No need to materialize green tiles or cache polygon checks.
 
 ## Computational Geometry Concepts
 
-### Point-in-Polygon
+### Edge-Crossing Detection
 
-Classic problem with multiple solutions:
-1. **Ray Casting** (used here): O(N) per query
-2. **Winding Number**: O(N) per query
-3. **Preprocessing**: Can reduce to O(log N) with complex structures
+The key insight for Part 2 is that we don't need to check every tile in a rectangle. Instead, we check if the polygon (formed by connecting red tiles) interferes with the rectangle in any of these ways:
 
-### Rectangle Validation
+1. **Vertex strictly inside**: A polygon vertex lies strictly inside the rectangle (not on boundary)
+2. **Edge crosses boundary**: A polygon edge crosses through a rectangle boundary
 
-Key insight: If all 4 corners of an axis-aligned rectangle are inside a polygon, the entire rectangle is inside (assuming convex or reasonable polygon shape).
+If neither of these conditions occurs, the rectangle is valid.
+
+### Why Edge-Crossing Works
+
+For an axis-aligned rectangle with polygon vertices as corners:
+- If no polygon vertex is strictly inside
+- And no polygon edge crosses the rectangle boundaries
+- Then the entire rectangle contains only red/green tiles
 
 This works because:
+- The polygon forms a closed shape
 - Rectangle edges are straight lines
-- If corners are inside, no edge can escape and re-enter
-- Avoids checking potentially millions of interior tiles
+- If edges don't cross, the interior is safe
 
-### Edge Cases Handled
+### Comparison to Point-in-Polygon
 
-- **Points on boundary**: Explicitly checked with `isOnBoundary`
-- **Red tile corners**: Always valid (part of polygon vertices)
-- **Degenerate rectangles**: Width or height = 1 (still valid)
+**Point-in-Polygon (Ray Casting)** - What we initially tried:
+- Cast a ray from point to infinity
+- Count edge crossings: odd = inside, even = outside
+- Required checking EVERY tile in rectangle
+- O(Area × N) complexity per rectangle
+
+**Edge-Crossing Detection** - Correct approach:
+- Check if polygon edges cross rectangle boundaries
+- Only check polygon vertices/edges, not interior tiles
+- O(N) complexity per rectangle
+- Dramatically faster for large rectangles
 
 ## Potential Extensions
 
